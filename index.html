@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AutoWorks — Repair Workshop</title>
+<title>StreetKings AutoWorks — Repair Workshop</title>
 <style>
 body {
   margin: 0;
@@ -66,23 +66,50 @@ th {
   border-radius: 5px;
   margin-bottom: 10px;
 }
+.group {
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.group h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: #eab308;
+}
+.group input[type="checkbox"] {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  transform: scale(1.3);
+  cursor: pointer;
+}
+.deleteBtn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.deleteBtn:hover {
+  background: #ef4444;
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>AutoWorks • Repair Workshop</h1>
+  <h1>StreetKings AutoWorks • Repair Workshop</h1>
   <div id="alert" class="alert" style="display:none;"></div>
   <div class="card">
-    <form id="serviceForm">
-      <label>Service:</label>
-      <select id="serviceSelect"></select><br><br>
-      <label>Qty:</label>
-      <input type="number" id="qty" value="1" min="1"><br><br>
-      <label>Manual Comp:</label>
-      <input type="number" id="manual_comp" placeholder="Isi jika repair"><br><br>
-      <label>Manual Mat:</label>
-      <input type="number" id="manual_mat" placeholder="Opsional"><br><br>
-      <button type="submit">Tambah Service</button>
+    <form id="multiForm">
+      <div id="formContainer"></div>
+      <button type="button" id="addRowBtn" class="ghost">+ Tambah Baris</button>
+      <button type="button" id="delCheckedBtn" class="ghost">🗑 Hapus yang Dicentang</button>
+      <br><br>
+      <button type="submit">Tambah Semua</button>
     </form>
     <hr>
     <button class="ghost" id="exportBtn">Export CSV</button>
@@ -91,55 +118,43 @@ th {
     <p>Component: <b id="totalComp">0</b> | Material: <b id="totalMat">0</b> | Total: <b id="totalPrice">$0</b></p>
     <table>
       <thead>
-        <tr><th>Waktu</th><th>Service</th><th>Qty</th><th>Comp</th><th>Mat</th><th>Harga</th></tr>
+        <tr><th>Waktu</th><th>Service</th><th>Qty</th><th>Comp</th><th>Mat</th><th>Harga</th><th>Aksi</th></tr>
       </thead>
-      <tbody id="recordTable"><tr><td colspan="6">Belum ada transaksi.</td></tr></tbody>
+      <tbody id="recordTable"><tr><td colspan="7">Belum ada transaksi.</td></tr></tbody>
     </table>
   </div>
 </div>
 
 <script>
 const services = {
-  // === Repair Service ===
   "repair_engine": {label:"Repair Engine (rate x3 per comp)", price:null, comp:null, mat:null},
   "repair_body":   {label:"Repair Body (rate x3 per comp)", price:null, comp:null, mat:null},
   "repair_tire":   {label:"Repair Tire (rate x2.5 per comp)", price:null, comp:null, mat:null},
-
-  // === Upgrade ===
-  "up_engine_1x":  {label:"Up Engine 1x", price:1000, comp:200, mat:100},
-  "up_body_1x":    {label:"Up Body 1x", price:850, comp:100, mat:200},
-  "up_tank_1x":    {label:"Up Tank 1x", price:850, comp:100, mat:200},
-
-  // === Spray / Paint ===
-  "spray":         {label:"Spray", price:250, comp:40, mat:0},
-  "paintjob":      {label:"Paintjob", price:300, comp:50, mat:25},
-
-  // === Small Modifications ===
-  "wheel":         {label:"Wheels Car", price:300, comp:30, mat:100},
-  "spoiler":       {label:"Spoiler Car", price:250, comp:25, mat:80},
-  "hood":          {label:"Hood Car", price:350, comp:35, mat:120},
-  "vent":          {label:"Vent Car", price:320, comp:30, mat:100},
-  "bullbars":      {label:"Bullbars", price:350, comp:35, mat:110},
-  "light":         {label:"Light Car", price:325, comp:30, mat:90},
-  "roof":          {label:"Roofs Car", price:350, comp:35, mat:125},
-  "side_skirts":   {label:"Side Skirts", price:350, comp:35, mat:115},
-
-  // === Medium Modifications ===
-  "stereo":        {label:"Stereo", price:420, comp:40, mat:130},
-  "hydraulics":    {label:"Hydraulics", price:450, comp:45, mat:140},
-  "front_bumper":  {label:"Front Bumper", price:400, comp:30, mat:125},
-  "rear_bumper":   {label:"Rear Bumper", price:400, comp:30, mat:125},
-  "exhausts":      {label:"Exhausts", price:400, comp:30, mat:120},
-  "neon":          {label:"Neon", price:400, comp:30, mat:100},
-
-  // === High Modifications ===
-  "nitro_1":       {label:"Nitro 1", price:650, comp:60, mat:150},
-  "nitro_2":       {label:"Nitro 2", price:850, comp:80, mat:200},
-  "nitro_3":       {label:"Nitro 3", price:1000, comp:100, mat:250},
-
-  // === Packages ===
-  "pkg_full_upgrade": {label:"Paket: Full Upgrade", price:4500, comp:800, mat:700},
-  "pkg_full_allmod":  {label:"Paket: Full All Modif", price:5500, comp:1900, mat:1750}
+  "spray":         {label:"Spray Car", comp:40, mat:0, price:250},
+  "paintjob":      {label:"Paint Job Car", comp:50, mat:25, price:300},
+  "wheel":         {label:"Wheels Car", comp:50, mat:25, price:300},
+  "spoiler":       {label:"Spoiler Car", comp:25, mat:100, price:250},
+  "hood":          {label:"Hood Car", comp:25, mat:100, price:350},
+  "vent":          {label:"Vents Car", comp:25, mat:100, price:320},
+  "light":         {label:"Lights Car", comp:25, mat:100, price:325},
+  "exhaust":       {label:"Exhausts", comp:30, mat:100, price:400},
+  "front_bumper":  {label:"Front Bumpers", comp:30, mat:125, price:400},
+  "rear_bumper":   {label:"Rear Bumpers", comp:30, mat:125, price:400},
+  "roof":          {label:"Roofs Car", comp:25, mat:100, price:350},
+  "side_skirt":    {label:"Side Skirts", comp:25, mat:100, price:350},
+  "bullbar":       {label:"Bullbars", comp:25, mat:125, price:350},
+  "stereo":        {label:"Stereo", comp:100, mat:50, price:420},
+  "hydraulics":    {label:"Hydraulics", comp:100, mat:50, price:450},
+  "nitro_1":       {label:"Nitro 1 (x2)", comp:100, mat:100, price:650},
+  "nitro_2":       {label:"Nitro 2 (x5)", comp:175, mat:100, price:850},
+  "nitro_3":       {label:"Nitro 3 (x10)", comp:200, mat:150, price:1000},
+  "neon":          {label:"Neon", comp:100, mat:50, price:400},
+  "engine_up":     {label:"Engine Upgrade", comp:200, mat:100, price:1000},
+  "body_up":       {label:"Body Upgrade", comp:100, mat:200, price:850},
+  "tank_up":       {label:"Fuel Tank Upgrade", comp:100, mat:200, price:850},
+  "remove_mod":    {label:"Remove Vehicle Modification", comp:2, mat:2, price:50},
+  "pkg_full_upgrade": {label:"Paket: Full Upgrade", comp:800, mat:700, price:4500},
+  "pkg_full_allmod":  {label:"Paket: Full All Modif", comp:1900, mat:1750, price:5500}
 };
 
 let records = JSON.parse(localStorage.getItem("records") || "[]");
@@ -151,66 +166,112 @@ function showAlert(msg){
   el.style.display = "block";
   setTimeout(()=>el.style.display="none", 3000);
 }
-
 function saveData(){
   localStorage.setItem("records", JSON.stringify(records));
   renderTable();
 }
-
-function renderSelect(){
-  const sel=document.getElementById("serviceSelect");
-  sel.innerHTML="";
-  Object.keys(services).forEach(k=>{
-    const opt=document.createElement("option");
-    opt.value=k;
-    opt.textContent=services[k].label;
-    sel.appendChild(opt);
-  });
-}
-
 function renderTable(){
   const tbody=document.getElementById("recordTable");
-  if(records.length===0){tbody.innerHTML='<tr><td colspan="6">Belum ada transaksi.</td></tr>';return;}
+  if(records.length===0){tbody.innerHTML='<tr><td colspan="7">Belum ada transaksi.</td></tr>';return;}
   tbody.innerHTML="";
   let totalC=0,totalM=0,totalP=0;
-  records.slice().reverse().forEach(r=>{
+  records.slice().reverse().forEach((r,idx)=>{
     const tr=document.createElement("tr");
     tr.innerHTML=`<td>${r.time}</td><td>${r.service_label}</td><td>${r.qty}</td>
-    <td>${r.comp}</td><td>${r.mat}</td><td>${money(r.price)}</td>`;
+    <td>${r.comp}</td><td>${r.mat}</td><td>${money(r.price)}</td>
+    <td><button class="deleteBtn" data-idx="${records.length-1-idx}">🗑</button></td>`;
     tbody.appendChild(tr);
     totalC+=r.comp;totalM+=r.mat;totalP+=r.price;
   });
   document.getElementById("totalComp").textContent=totalC;
   document.getElementById("totalMat").textContent=totalM;
   document.getElementById("totalPrice").textContent=money(totalP);
+
+  // tombol hapus per baris
+  document.querySelectorAll(".deleteBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const i=parseInt(btn.dataset.idx);
+      if(confirm(`Hapus data "${records[i].service_label}"?`)){
+        records.splice(i,1);
+        saveData();
+      }
+    });
+  });
 }
 
-document.getElementById("serviceForm").addEventListener("submit",e=>{
+function makeSelect(){
+  const sel=document.createElement("select");
+  Object.keys(services).forEach(k=>{
+    const opt=document.createElement("option");
+    opt.value=k;
+    opt.textContent=services[k].label;
+    sel.appendChild(opt);
+  });
+  return sel;
+}
+
+function addRow(){
+  const container=document.getElementById("formContainer");
+  const div=document.createElement("div");
+  div.className="group";
+
+  const checkbox=document.createElement("input");
+  checkbox.type="checkbox";
+  checkbox.className="chkDel";
+  div.appendChild(checkbox);
+
+  div.innerHTML+=`<h4>Input Service</h4>`;
+  const sel=makeSelect(); sel.className="svc";
+  const qty=document.createElement("input"); qty.type="number"; qty.value=1; qty.min=1; qty.className="qty";
+  const comp=document.createElement("input"); comp.type="number"; comp.placeholder="Manual Comp (opsional)"; comp.className="comp";
+  const mat=document.createElement("input"); mat.type="number"; mat.placeholder="Manual Mat (opsional)"; mat.className="mat";
+  div.append("Service:", sel, document.createElement("br"), document.createElement("br"),
+             "Qty:", qty, document.createElement("br"), document.createElement("br"),
+             "Manual Comp:", comp, document.createElement("br"), document.createElement("br"),
+             "Manual Mat:", mat);
+  container.appendChild(div);
+}
+
+document.getElementById("addRowBtn").addEventListener("click",addRow);
+document.getElementById("delCheckedBtn").addEventListener("click",()=>{
+  document.querySelectorAll(".chkDel:checked").forEach(c=>c.closest(".group").remove());
+});
+
+document.getElementById("multiForm").addEventListener("submit",e=>{
   e.preventDefault();
-  const key=document.getElementById("serviceSelect").value;
-  const qty=parseInt(document.getElementById("qty").value)||1;
-  const manualC=document.getElementById("manual_comp").value;
-  const manualM=document.getElementById("manual_mat").value;
-  const svc=services[key];
-  let compUsed=0,matUsed=0,total=0;
+  const groups=document.querySelectorAll(".group");
+  let count=0;
+  groups.forEach(g=>{
+    const key=g.querySelector(".svc").value;
+    const qty=parseInt(g.querySelector(".qty").value)||1;
+    const manualC=g.querySelector(".comp").value;
+    const manualM=g.querySelector(".mat").value;
+    const svc=services[key];
+    if(!svc) return;
 
-  if(svc.comp!==null) compUsed=svc.comp*qty;
-  if(svc.mat!==null) matUsed=svc.mat*qty;
-  if(manualC) compUsed=parseInt(manualC);
-  if(manualM) matUsed=parseInt(manualM);
+    let compUsed = (typeof svc.comp === 'number') ? svc.comp * qty : 0;
+    let matUsed  = (typeof svc.mat === 'number')  ? svc.mat * qty  : 0;
+    if(manualC) compUsed = parseInt(manualC,10);
+    if(manualM) matUsed  = parseInt(manualM,10);
 
-  if(svc.price!==null) total=svc.price*qty;
-  else if(key==="repair_engine"||key==="repair_body") total=compUsed*3;
-  else if(key==="repair_tire") total=compUsed*2.5;
+    let total = 0;
+    if(key.startsWith("repair_")){
+      if(key === "repair_tire") total = compUsed * 2.5;
+      else total = compUsed * 3;
+    } else {
+      total = (svc.price || 0) * qty;
+    }
 
-  const rec={
-    time:new Date().toLocaleString(),
-    service_label:svc.label,
-    qty, comp:compUsed, mat:matUsed, price:total
-  };
-  records.push(rec);
-  saveData();
-  showAlert(`✔ ${svc.label} berhasil disimpan (Comp ${compUsed}, Mat ${matUsed}, Harga ${money(total)})`);
+    const rec={time:new Date().toLocaleString(),service_label:svc.label,qty,comp:compUsed,mat:matUsed,price:total};
+    records.push(rec);
+    count++;
+  });
+  if(count>0){
+    saveData();
+    showAlert(`✔ ${count} service berhasil ditambahkan.`);
+  } else {
+    showAlert("Tidak ada data yang valid untuk disimpan.");
+  }
 });
 
 document.getElementById("clearBtn").addEventListener("click",()=>{
@@ -231,7 +292,7 @@ document.getElementById("exportBtn").addEventListener("click",()=>{
   a.click();
 });
 
-renderSelect();
+addRow();
 renderTable();
 </script>
 </body>
